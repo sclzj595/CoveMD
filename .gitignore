@@ -1,0 +1,23 @@
+# ---------- 构建产物 ----------
+build/
+build-dbg/
+node_modules/
+*.vsix
+*.o
+*.a
+*.obj
+*.exe
+*.dll
+*.so
+*.dylib
+
+# ---------- 排障临时文件（本地生成，勿入库） ----------
+_devhost.log
+_dh_*
+_locked_build/
+*_err.txt
+*_out.txt
+
+# ---------- IDE ----------
+.trae/
+.vscode/*.log

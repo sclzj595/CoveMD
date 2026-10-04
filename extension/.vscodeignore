@@ -1,0 +1,10 @@
+# 打包只保留运行必需物：out/ media/ native/ 元数据
+src/**
+test/**
+out/**/*.map
+node_modules/**
+extension/**
+**/*.ts
+**/tsconfig.json
+**/.gitignore
+vsce.png

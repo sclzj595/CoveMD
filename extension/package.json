@@ -1,0 +1,83 @@
+{
+  "name": "covemd",
+  "displayName": "CoveMD Reader",
+  "description": "Structure-aware Markdown Reader for VSCode, powered by a custom C++ parsing engine（结构感知 Markdown 阅读器，自研 C++ AST 引擎驱动）",
+  "version": "0.1.0",
+  "publisher": "covemd",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sclzj595/CoveMD.git"
+  },
+  "icon": "media/icon.png",
+  "galleryBanner": {
+    "color": "#2f6fde",
+    "theme": "dark"
+  },
+  "keywords": [
+    "markdown",
+    "preview",
+    "reader",
+    "outline",
+    "callout",
+    "sync",
+    "c++"
+  ],
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Visual",
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:markdown"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "covemd.openPreview",
+        "title": "打开预览",
+        "category": "CoveMD"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "covemd.openPreview",
+        "key": "ctrl+alt+v",
+        "when": "editorLangId == markdown"
+      }
+    ],
+    "configuration": {
+      "title": "CoveMD",
+      "properties": {
+        "covemd.parser": {
+          "type": "string",
+          "enum": [
+            "maddy",
+            "simple"
+          ],
+          "default": "maddy",
+          "description": "解析核心：maddy（三方实现）或 simple（自研 fallback）"
+        },
+        "covemd.outline": {
+          "type": "boolean",
+          "default": true,
+          "description": "启用 Smart Outline 大纲侧栏（窄面板自动隐藏）"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p .",
+    "watch": "tsc -w -p .",
+    "test": "node test/page.test.js",
+    "package": "npm run compile && npm test && node -e \"const fs=require('fs');fs.mkdirSync('native',{recursive:true});fs.copyFileSync('../binding/build/Release/covemd_native.node','native/covemd_native.node');console.log('native module copied')\" && npx @vscode/vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/vscode": "^1.80.0",
+    "typescript": "^5.4.5"
+  }
+}

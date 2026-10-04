@@ -1,0 +1,15 @@
+{
+  "name": "covemd-parser",
+  "version": "0.1.0",
+  "description": "CoveMD Markdown 解析核心的 Node-API 绑定（C++17，零运行时依赖）",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "build": "cmake-js compile",
+    "test": "node test.js"
+  },
+  "devDependencies": {
+    "cmake-js": "^7.3.0",
+    "node-addon-api": "^8.9.2"
+  }
+}

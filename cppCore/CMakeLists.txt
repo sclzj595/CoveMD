@@ -6,6 +6,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # ============ 核心：纯 C++17 静态库（零 Qt / 零 Boost / 零 Node 依赖） ============
+# 静态库会被链接进 SHARED 的 covemd_native.node，必须开 PIC，
+# 否则 Linux 上链接报 relocation R_X86_64_32 can not be used / bad value
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 add_library(covemd_core STATIC
     src/maddy_parser.cpp
     src/simple_parser.cpp

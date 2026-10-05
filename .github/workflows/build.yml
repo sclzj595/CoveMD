@@ -93,6 +93,9 @@ jobs:
     permissions:
       contents: write
     steps:
+      # gh release create 依赖 git 上下文解析仓库，必须先 checkout
+      - uses: actions/checkout@v4
+
       - name: Download all VSIX artifacts
         uses: actions/download-artifact@v4
         with:

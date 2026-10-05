@@ -66,7 +66,11 @@ jobs:
         run: |
           npm ci --no-audit --no-fund
           npm run compile
-          npm test
+          # 交叉编译 job 的 .node 无法被本机 node 加载（架构不同），
+          # native 冒烟由其余原生矩阵 job 覆盖，这里只跳过测试、照常打包
+          if [ -z "${{ matrix.cross }}" ]; then
+            npm test
+          fi
           mkdir -p native
           cp ../binding/build/Release/covemd_native.node native/covemd_native.node
           VERSION=$(node -p "require('./package.json').version")

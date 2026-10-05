@@ -3,7 +3,9 @@
 # 设计要点：
 # - 原生模块 covemd_native.node 必须在目标平台原生编译（MSVC/clang/gcc），
 #   由矩阵把 5 个 target 分发到对应 runner，无交叉编译。
-# - macOS：macos-13 是 Intel（darwin-x64），macos-latest 是 Apple Silicon（darwin-arm64）。
+# - macOS：darwin-arm64 直接原生构建；darwin-x64 若用 macos-13（Intel）免费槽位
+#   排队可达数小时，故改在 arm64 runner 上交叉编译（cmake-js --arch → CMAKE_OSX_ARCHITECTURES），
+#   并用 file 命令断言产物架构，防止静默错架构。
 # - linux-arm64 用 GitHub 免费 arm64 runner（仓库为 public 才可用）。
 # - 每个 job 产物以 artifact 上传；打 v* tag 时额外创建 GitHub Release 并附全部 VSIX。
 #
@@ -31,7 +33,7 @@ jobs:
       matrix:
         include:
           - { os: windows-latest,   target: win32-x64 }
-          - { os: macos-13,         target: darwin-x64 }
+          - { os: macos-latest,     target: darwin-x64, cross: x86_64 }
           - { os: macos-latest,     target: darwin-arm64 }
           - { os: ubuntu-latest,    target: linux-x64 }
           - { os: ubuntu-24.04-arm, target: linux-arm64 }
@@ -47,8 +49,16 @@ jobs:
         working-directory: binding
         run: |
           npm ci --no-audit --no-fund
-          npx cmake-js compile --out build
-          npm test
+          if [ -n "${{ matrix.cross }}" ]; then
+            # 交叉编译（arm64 runner 上产出 x86_64 .node，规避 macos-13 排队）
+            npx cmake-js compile --out build --arch ${{ matrix.cross }}
+            file build/Release/covemd_native.node
+            file build/Release/covemd_native.node | grep -q x86_64 || {
+              echo "::error::cross-compile failed: expected x86_64 binary"; exit 1; }
+          else
+            npx cmake-js compile --out build
+            npm test
+          fi
 
       - name: Package VSIX (extension/)
         shell: bash

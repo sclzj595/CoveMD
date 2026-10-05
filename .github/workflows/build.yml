@@ -1,0 +1,96 @@
+# CoveMD 多平台 VSIX 构建与发布
+#
+# 设计要点：
+# - 原生模块 covemd_native.node 必须在目标平台原生编译（MSVC/clang/gcc），
+#   由矩阵把 5 个 target 分发到对应 runner，无交叉编译。
+# - macOS：macos-13 是 Intel（darwin-x64），macos-latest 是 Apple Silicon（darwin-arm64）。
+# - linux-arm64 用 GitHub 免费 arm64 runner（仓库为 public 才可用）。
+# - 每个 job 产物以 artifact 上传；打 v* tag 时额外创建 GitHub Release 并附全部 VSIX。
+#
+# 注意：Windows 上必须走 MSVC 工具链（runner 默认即 VS2022），
+#       MinGW 构建的 .node 在 Electron 宿主会段错误（项目已验证的教训）。
+
+name: Build VSIX
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: windows-latest,   target: win32-x64 }
+          - { os: macos-13,         target: darwin-x64 }
+          - { os: macos-latest,     target: darwin-arm64 }
+          - { os: ubuntu-latest,    target: linux-x64 }
+          - { os: ubuntu-24.04-arm, target: linux-arm64 }
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build native module (binding/)
+        shell: bash
+        working-directory: binding
+        run: |
+          npm ci --no-audit --no-fund
+          npx cmake-js compile --out build
+          npm test
+
+      - name: Package VSIX (extension/)
+        shell: bash
+        working-directory: extension
+        run: |
+          npm ci --no-audit --no-fund
+          npm run compile
+          npm test
+          mkdir -p native
+          cp ../binding/build/Release/covemd_native.node native/covemd_native.node
+          VERSION=$(node -p "require('./package.json').version")
+          npx -y @vscode/vsce package --no-dependencies \
+            --target ${{ matrix.target }} \
+            -o "covemd-$VERSION-${{ matrix.target }}.vsix"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vsix-${{ matrix.target }}
+          path: extension/*.vsix
+          if-no-files-found: error
+
+  release:
+    name: GitHub Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all VSIX artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: vsix-*
+          merge-multiple: true
+          path: dist
+
+      - name: Create release with VSIX assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls -la dist/
+          gh release create "$GITHUB_REF_NAME" dist/*.vsix \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes

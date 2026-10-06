@@ -111,3 +111,19 @@ jobs:
           gh release create "$GITHUB_REF_NAME" dist/*.vsix \
             --title "$GITHUB_REF_NAME" \
             --generate-notes
+
+      # 上架 Open VSX 开源插件市场（namespace sclzj595，需先在仓库 secret 配 OVSX_TOKEN）
+      # 5 个平台 VSIX 各自带 TargetPlatform 元数据（vsce package --target 打入），
+      # 逐个顺序发布后 Open VSX 自动合并为一个 listing，按客户端平台分发
+      - name: Publish to Open VSX
+        env:
+          OVSX_TOKEN: ${{ secrets.OVSX_TOKEN }}
+        run: |
+          if [ -z "$OVSX_TOKEN" ]; then
+            echo "::warning::OVSX_TOKEN secret 未配置，跳过 Open VSX 上架"
+            exit 0
+          fi
+          for f in dist/*.vsix; do
+            echo "Publishing $f ..."
+            npx -y ovsx publish "$f" --pat "$OVSX_TOKEN" --skip-duplicate
+          done

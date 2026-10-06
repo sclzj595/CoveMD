@@ -3,7 +3,7 @@
   "displayName": "CoveMD Reader",
   "description": "Structure-aware Markdown Reader for VSCode, powered by a custom C++ parsing engine（结构感知 Markdown 阅读器，自研 C++ AST 引擎驱动）",
   "version": "0.1.0",
-  "publisher": "covemd",
+  "publisher": "sclzj595",
   "license": "MIT",
   "repository": {
     "type": "git",
